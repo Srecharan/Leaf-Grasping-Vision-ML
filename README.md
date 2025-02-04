@@ -1,7 +1,61 @@
 # DeepLeafVision: ML-Enhanced Computer Vision System
 
+[![Python](https://img.shields.io/badge/Python-3.8.20-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-1.7.0-EE4C2C.svg)](https://pytorch.org/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.10.0-green.svg)](https://opencv.org/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CUDA](https://img.shields.io/badge/CUDA-10.2.89-green.svg)](https://developer.nvidia.com/cuda-toolkit)
+
 ## Overview
 An intelligent computer vision system that combines traditional CV algorithms with deep learning for robust object point detection. The system implements a novel hybrid approach where classical computer vision acts as a teacher for a self-supervised CNN model, demonstrating the synergy between traditional and modern ML approaches.
+
+## System Architecture
+
+[Stereo Camera Input]
+    │
+    ├───────────────────────────┬
+    v                           v                     
+[Left Image]               [Stereo Pair]        
+    │                           │                     
+    │                           │                     
+    │                           │             
+    │                           │                     
+    v                           v                     
+[YOLOv8 Segmentation]    [RAFT-Stereo Node] 
+    |                           |
+    |                           ├──────> [Depth Maps]
+    │                           ├──────> [Disparity]            
+    v                           ├──────> [Point Clouds]            
+[Segmented Masks]                              │
+    │                                          │
+    └───────────────────┐──────────────────────|
+                        |
+                        v                          
+                   [Leaf Grasp Node]
+                        │
+                        v
+              [Traditional CV Pipeline]
+                        │
+            ┌───────────┴───────────┐
+            v                       v
+    [Feature Extraction]    [Score Generation]
+            │                       │
+            v                       v
+    [ML Enhancement Layer]   [Classical Scores]
+           │                       │
+           └───────────┐───────────│
+                       |
+                       v          
+                 [Hybrid Decision]
+                       │
+                       v
+            [Final Grasp Selection]
+                      │
+                      v                  
+                [Grasp Point]───────────>[Pre-grasp Point]
+
+
+
 
 ## Key Features
 - Hybrid architecture combining classical CV with deep learning
