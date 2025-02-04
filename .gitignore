@@ -1,0 +1,24 @@
+
+# Ignoring specific files
+ml_wt_tuning
+scripts_grasp_backup_16thdec_24.zip
+text
+
+# Python-related ignores
+*.pyc
+__pycache__/
+
+# IDE/Editor files
+.vscode/
+
+# Model-related files
+*.pth
+
+# Machine Learning training data
+/ml_training_data/
+/visualization/
+
+# ROS-specific ignores
+build/
+devel/
+.catkin_workspace
