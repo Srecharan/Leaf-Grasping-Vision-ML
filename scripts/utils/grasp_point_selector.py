@@ -920,3 +920,4 @@ class GraspPointSelector:
         except Exception as e:
             rospy.logerr(f"Error in midrib detection: {str(e)}")
             return None
+        
