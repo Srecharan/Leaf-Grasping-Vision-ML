@@ -26,9 +26,6 @@ An intelligent computer vision system that combines traditional CV algorithms wi
                 v                                 v
             [Left Image]             [Stereo Pair (Left + Right Image)]
                 │                                 │
-                │                                 │
-                │                                 │
-                │                                 │
                 v                                 v
             [YOLOv8 Segmentation]           [RAFT-Stereo Node]
                 |                                 |
@@ -36,39 +33,37 @@ An intelligent computer vision system that combines traditional CV algorithms wi
                 │                                 ├──────> [Disparity]
                 |───>[Segmented Masks]            ├──────> [Point Clouds]
                 │                                 │
-                └───────────────┐─────────────────┘
-                                |
-                                v
-                        [Leaf Grasp Node]
-                                │
-                                v
+                └───────────┐─────────────────────┘
+                            |
+                            v
+                    [Leaf Grasp Node]
+                            │
                     [Traditional CV Pipeline]
-                                │
-                        [Leaf Selection]
-                    ┌───────────┴─────────────┐
-                    v                         v
-            [Pareto Optimization]     [Tall Leaf Detection]
-                    │                         │
-                    └───────────┐─────────────┘
-                                │
-                    [Optimal Leaf Selection]
-                    ┌───────────┴───────────┐
-                    v                       v
-            [Feature Extraction]    [Score Generation]
-                    │                       │
-                    v                       v
-            [ML Enhancement Layer]   [Classical Scores]
-                    │                       │
-                    └───────────┐───────────┘
-                                |
-                                v
-                        [Hybrid Decision]
-                                │
-                                v
-                        [Final Grasp Selection]
-                                │
-                                v
-                            [Grasp Point]───────────>[Pre-grasp Point]
+                            │
+                ┌───────────┴─────────────┐
+                v                         v
+        [Pareto Optimization]     [Tall Leaf Detection]
+                │                         │
+                └───────────┐─────────────┘
+                            │
+                [Optimal Leaf Selection]
+                ┌───────────┴───────────┐
+                v                       v
+        [Feature Extraction]    [Classical Scores]
+                │                       │
+                v                       v
+        [ML Enhancement Layer]   [Classical Scores]
+                │                       │
+                └───────────┐───────────┘
+                            |
+                            v
+                    [Hybrid Decision]
+                            │
+                            v
+                    [Final Grasp Selection]
+                            │
+                            v
+                        [Grasp Point]───────>[Pre-grasp Point]
 ```
 
 ## Note on System Integration
@@ -96,22 +91,22 @@ This system represents the vision and grasping pipeline of the REX (Robot for Ex
 
 Each component has its dedicated repository for detailed implementation. This repository focuses on the hybrid CV-ML approach for optimal grasp point selection and its integration with the complete system.
 
+## Technical Implementation
 
 ### 1. Traditional CV Pipeline
-
-The system employs a sophisticated computer vision pipeline that combines multiple scoring mechanisms for optimal leaf selection and grasp point determination.
 
 #### 1.1 Optimal Leaf Selection
 
 The selection process uses Pareto optimization across multiple scoring criteria:
 
-```math
-\vec{S} = \begin{bmatrix} S_{clutter} \\ S_{distance} \\ S_{visibility} \end{bmatrix}
 ```
+S = [S_clutter; S_distance; S_visibility]
+```
+
 Where:
-- $S_{clutter}$: Score for isolation from other leaves
-- $S_{distance}$: Score for proximity to camera
-- $S_{visibility}$: Score for completeness of view
+- S_clutter: Score for isolation from other leaves
+- S_distance: Score for proximity to camera
+- S_visibility: Score for completeness of view
 
 Implementation:
 ```python
@@ -124,16 +119,14 @@ weights = np.array([0.35, 0.35, 0.3])  # Clutter, distance, visibility
 
 1. **Clutter Score** (40%):
    The clutter score uses Signed Distance Fields (SDF) and interior penalties:
-   ```math
-   SDF(x,y) = \frac{D_{inside}(x,y) - D_{outside}(x,y)}{\max|SDF|}
    ```
-   ```math
-   I_{penalty}(x,y) = e^{-\frac{(D_{inside}(x,y) - d_{opt})^2}{2d_{opt}^2}}
+   SDF(x,y) = (D_inside(x,y) - D_outside(x,y)) / max|SDF|
+   I_penalty(x,y) = exp(-(D_inside(x,y) - d_opt)^2 / (2*d_opt^2))
    ```
    Where:
-   - $D_{inside}$: Distance transform inside leaf mask
-   - $D_{outside}$: Distance transform outside leaf mask
-   - $d_{opt}$: Optimal distance from edge (20 pixels)
+   - D_inside: Distance transform inside leaf mask
+   - D_outside: Distance transform outside leaf mask
+   - d_opt: Optimal distance from edge (20 pixels)
 
    Implementation:
    ```python
@@ -146,21 +139,18 @@ weights = np.array([0.35, 0.35, 0.3])  # Clutter, distance, visibility
 
 2. **Distance Score** (35%):
    Projects 2D points to 3D space and scores based on distance from camera:
-   ```math
-   \begin{bmatrix} X \\ Y \\ Z \end{bmatrix} = \begin{bmatrix} 
-   Z(u-c_x)/f \\
-   Z(v-c_y)/f \\
-   Z
-   \end{bmatrix}
    ```
-   ```math
-   S_{distance} = e^{-d/0.3}
+   [X]   [Z(u-c_x)/f]
+   [Y] = [Z(v-c_y)/f]
+   [Z]   [    Z     ]
+
+   S_distance = exp(-d/0.3)
    ```
    Where:
-   - $(u,v)$: Image coordinates
-   - $(c_x,c_y)$: Camera optical center
-   - $f$: Focal length
-   - $d$: Euclidean distance from camera
+   - (u,v): Image coordinates
+   - (c_x,c_y): Camera optical center
+   - f: Focal length
+   - d: Euclidean distance from camera
    - 0.3: Scale factor (30cm normalization)
 
    Implementation:
@@ -171,7 +161,6 @@ weights = np.array([0.35, 0.35, 0.3])  # Clutter, distance, visibility
    ```
 
 3. **Visibility Score** (25%):
-   Evaluates leaf visibility and position in frame:
    ```python
    # Border contact check
    border_pixels = np.sum(leaf_mask[0,:]) + np.sum(leaf_mask[-1,:]) + \
@@ -188,19 +177,15 @@ weights = np.array([0.35, 0.35, 0.3])  # Clutter, distance, visibility
 
 #### 1.2 Grasp Point Selection
 
-After leaf selection, the system determines optimal grasp points using:
-
 1. **Flatness Analysis** (25%):
    Uses depth gradients to measure surface flatness:
-   ```math
-   G_{mag} = \sqrt{\left(\frac{\partial D}{\partial x}\right)^2 + \left(\frac{\partial D}{\partial y}\right)^2}
    ```
-   ```math
-   S_{flat} = e^{-5G_{mag}}
+   G_mag = sqrt((∂D/∂x)^2 + (∂D/∂y)^2)
+   S_flat = exp(-5*G_mag)
    ```
    Where:
-   - $D$: Depth map
-   - $G_{mag}$: Gradient magnitude
+   - D: Depth map
+   - G_mag: Gradient magnitude
    - 5: Scaling factor for exponential weighting
 
    Implementation:
@@ -212,16 +197,13 @@ After leaf selection, the system determines optimal grasp points using:
    ```
 
 2. **Approach Vector Quality** (40%):
-   Scores grasp points based on approach angle:
-   ```math
-   \vec{v}_{approach} = \frac{(x-c_x, y-c_y, f)}{\|(x-c_x, y-c_y, f)\|}
    ```
-   ```math
-   S_{approach} = |\vec{v}_{approach} \cdot [0,0,1]^T|
+   v_approach = (x-c_x, y-c_y, f) / ||(x-c_x, y-c_y, f)||
+   S_approach = |v_approach · [0,0,1]^T|
    ```
    Where:
-   - $\vec{v}_{approach}$: Normalized approach vector
-   - $[0,0,1]^T$: Vertical direction (preferred approach)
+   - v_approach: Normalized approach vector
+   - [0,0,1]^T: Vertical direction (preferred approach)
 
 3. **Accessibility Score** (15%):
    ```python
@@ -246,11 +228,6 @@ After leaf selection, the system determines optimal grasp points using:
                  0.20 * edge_score +
                  0.15 * accessibility_score) * (1 - stem_penalty)
    ```
-
-<div align="center">
-  <img src="assets/traditional_pipeline.png" width="800"/>
-  <p><i>Traditional CV pipeline visualization showing SDF mapping (left), score heatmaps (center), and final grasp point selection with approach vector (right)</i></p>
-</div>
 
 ### 2. ML-Enhanced Decision Making
 
@@ -290,17 +267,6 @@ CNN Architecture:
 
 #### 2.3 Training Process and Results
 
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <figure style="width: 48%;">
-        <img src="assets/training_metrics.png" width="100%" alt="Training Metrics"/>
-        <figcaption><i>Training curves showing loss convergence and accuracy metrics</i></figcaption>
-    </figure>
-    <figure style="width: 48%;">
-        <img src="assets/ml_visualization.png" width="100%" alt="ML Results"/>
-        <figcaption><i>ML model predictions (right) compared to traditional CV selections (left)</i></figcaption>
-    </figure>
-</div>
-
 - **Dataset Composition**:
   ```
   Total Samples: 875
@@ -331,8 +297,6 @@ The final system combines traditional CV expertise with ML predictions for robus
 2. ML model evaluates and refines grasp point selection
 3. Pre-grasp point calculation ensures safe approach trajectories
 
-This hybrid approach leverages both geometric understanding from traditional CV and learned patterns from the ML model, resulting in more reliable grasp point selection.
-
 ## Performance Analysis
 
 ### Model Metrics
@@ -350,6 +314,26 @@ This hybrid approach leverages both geometric understanding from traditional CV 
 | Edge Case Handling (%)    | 92.3         | 94.8          |
 | Overall Success Rate (%)  | 85.6         | 90.8          |
 
+## Strategic Value of ML Integration
+
+The ML enhancement layer provides several key advantages:
+
+1. **Adaptive Learning**
+   - Continuous learning from operational data
+   - Improved handling of edge cases over time
+   - Adaptation to new leaf varieties and conditions
+
+2. **Knowledge Transfer**
+   - Traditional CV expertise encoded into ML features
+   - Discovery of subtle patterns beyond geometric rules
+   - Hybrid approach combines proven rules with learned patterns
+
+3. **Future Scalability**
+   - Self-supervised learning enables automatic improvement
+   - Growing dataset allows increased ML influence
+   - Potential for transfer learning to new plant species
+
+The current 70-30 weighting (CV:ML) reflects a balanced approach that leverages proven CV expertise while allowing ML refinement. As the dataset grows and model performance improves, this ratio can be dynamically adjusted based on performance metrics.
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
