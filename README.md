@@ -101,7 +101,7 @@ Each component has its dedicated repository for detailed implementation. This re
 
 The system employs a sophisticated computer vision pipeline that combines multiple scoring mechanisms for optimal leaf selection and grasp point determination.
 
-#### 1.1 Optimal Leaf Selection
+### 1.1 Optimal Leaf Selection
 
 The selection process uses Pareto optimization across multiple scoring criteria:
 
@@ -113,117 +113,90 @@ Where:
 - $S_{distance}$: Score for proximity to camera
 - $S_{visibility}$: Score for completeness of view
 
-Implementation:
-```python
-# Calculate Pareto front
-scores = np.stack([c['scores'] for c in candidates])
-pareto_mask = paretoset(scores, sense=['max', 'max', 'max'])
-# Apply weights for final selection
-weights = np.array([0.35, 0.35, 0.3])  # Clutter, distance, visibility
-```
 
-1. **Clutter Score** (40%):
-   The clutter score uses Signed Distance Fields (SDF) and interior penalties:
-   ```math
-   SDF(x,y) = \frac{D_{inside}(x,y) - D_{outside}(x,y)}{\max|SDF|}
-   ```
-   ```math
-   I_{penalty}(x,y) = e^{-\frac{(D_{inside}(x,y) - d_{opt})^2}{2d_{opt}^2}}
-   ```
-   Where:
-   - $D_{inside}$: Distance transform inside leaf mask
-   - $D_{outside}$: Distance transform outside leaf mask
-   - $d_{opt}$: Optimal distance from edge (20 pixels)
+1. **Clutter Score** (35%):
+   Uses Signed Distance Fields (SDF) to evaluate isolation from other leaves, combining interior penalty based on optimal edge distance and alignment with leaf orientation. Higher scores indicate better isolation from neighboring leaves.
 
    Implementation:
    ```python
+   # Calculate distance transforms for inside and outside regions
    dist_inside = cv2.distanceTransform(leaf_mask_np, cv2.DIST_L2, 5)
    dist_outside = cv2.distanceTransform(1 - leaf_mask_np, cv2.DIST_L2, 5)
+   
+   # Calculate interior penalty based on optimal distance from edge
    optimal_distance = 20  # pixels from edge
    interior_penalty = np.exp(-((dist_inside - optimal_distance) ** 2) / 
                            (2 * optimal_distance ** 2))
    ```
 
 2. **Distance Score** (35%):
-   Projects 2D points to 3D space and scores based on distance from camera:
-   ```math
-   \begin{bmatrix} X \\ Y \\ Z \end{bmatrix} = \begin{bmatrix} 
-   Z(u-c_x)/f \\
-   Z(v-c_y)/f \\
-   Z
-   \end{bmatrix}
-   ```
-   ```math
-   S_{distance} = e^{-d/0.3}
-   ```
-   Where:
-   - $(u,v)$: Image coordinates
-   - $(c_x,c_y)$: Camera optical center
-   - $f$: Focal length
-   - $d$: Euclidean distance from camera
-   - 0.3: Scale factor (30cm normalization)
+   Projects points to 3D space and scores based on distance from camera, with exponential falloff beyond 50cm. Favors points closer to the camera while maintaining a reasonable working distance.
 
    Implementation:
    ```python
+   # Project to 3D space using camera parameters
    X = (depth_value * (u - self.camera_cx)) / self.f_norm
    Y = (depth_value * (v - self.camera_cy)) / self.f_norm
-   distance_score = np.exp(-mean_distance / 0.3)
+   
+   # Calculate distance-based score with 50cm normalization
+   distance_score = np.exp(-mean_distance / 0.5)
    ```
 
-3. **Visibility Score** (25%):
+3. **Visibility Score** (30%):
    Evaluates leaf visibility and position in frame:
    ```python
    # Border contact check
-   border_pixels = np.sum(leaf_mask[0,:]) + np.sum(leaf_mask[-1,:]) + \
-                  np.sum(leaf_mask[:,0]) + np.sum(leaf_mask[:,-1])
-   
-   if border_pixels > 0:
-       visibility_score = 0.0
-   else:
-       # Distance from image center
-       centroid = np.mean([x_indices, y_indices], axis=1)
-       dist_from_center = np.linalg.norm(centroid - image_center)
-       visibility_score = 1.0 - (dist_from_center / max_dist)
+    border_pixels = np.sum(leaf_mask[0,:]) + np.sum(leaf_mask[-1,:]) + \
+                np.sum(leaf_mask[:,0]) + np.sum(leaf_mask[:,-1])
+
+    if border_pixels > 0:
+        visibility_score = 0.0
+    else:
+        # Distance from image center
+        centroid = np.mean([x_indices, y_indices], axis=1)
+        dist_from_center = np.linalg.norm(centroid - image_center)
+        visibility_score = 1.0 - (dist_from_center / max_dist)
    ```
 
-#### 1.2 Grasp Point Selection
-
-After leaf selection, the system determines optimal grasp points using:
+### 1.2 Grasp Point Selection
 
 1. **Flatness Analysis** (25%):
-   Uses depth gradients to measure surface flatness:
-   ```math
-   G_{mag} = \sqrt{\left(\frac{\partial D}{\partial x}\right)^2 + \left(\frac{\partial D}{\partial y}\right)^2}
-   ```
-   ```math
-   S_{flat} = e^{-5G_{mag}}
-   ```
-   Where:
-   - $D$: Depth map
-   - $G_{mag}$: Gradient magnitude
-   - 5: Scaling factor for exponential weighting
+   Analyzes surface flatness using depth gradients. Calculates gradient magnitude in x and y directions, then scores points based on local surface smoothness.
 
    Implementation:
    ```python
+   # Calculate depth gradients using Sobel operators
    dx = F.conv2d(padded_depth, sobel_x)
    dy = F.conv2d(padded_depth, sobel_y)
    gradient_magnitude = torch.sqrt(dx**2 + dy**2)
+   
+   # Convert to flatness score with exponential weighting
    flatness_score = torch.exp(-gradient_magnitude * 5)
    ```
 
 2. **Approach Vector Quality** (40%):
-   Scores grasp points based on approach angle:
-   ```math
-   \vec{v}_{approach} = \frac{(x-c_x, y-c_y, f)}{\|(x-c_x, y-c_y, f)\|}
+   Evaluates the quality of potential grasp approaches by analyzing the angle between the approach vector and vertical direction. Favors approaches that align well with the robot's preferred grasping orientation.
+
+   Implementation:
+   ```python
+   # Calculate vectors from camera to each point
+    vectors_to_point = np.stack([
+        (x_coords - self.camera_cx),
+        (y_coords - self.camera_cy),
+        np.full((height, width), self.f_norm)
+    ], axis=-1)
+
+    # Normalize vectors and calculate angle with vertical
+    norms = np.linalg.norm(vectors_to_point, axis=-1)
+    vectors_to_point = vectors_to_point / norms[..., np.newaxis]
+    vertical = np.array([0, 0, 1])
+    angle_with_vertical = np.abs(np.dot(vectors_to_point, vertical))
+
+    approach_score = angle_with_vertical * leaf_mask
    ```
-   ```math
-   S_{approach} = |\vec{v}_{approach} \cdot [0,0,1]^T|
-   ```
-   Where:
-   - $\vec{v}_{approach}$: Normalized approach vector
-   - $[0,0,1]^T$: Vertical direction (preferred approach)
 
 3. **Accessibility Score** (15%):
+   Evaluates grasp points based on their position relative to the camera origin, combining distance-based accessibility with directional preference. Favors points that are both easily reachable and positioned in front of the camera for optimal end-effector approach.
    ```python
    # Distance from camera origin
    dist_from_origin = np.sqrt((x_grid - camera_cx)**2 + 
@@ -247,6 +220,30 @@ After leaf selection, the system determines optimal grasp points using:
                  0.15 * accessibility_score) * (1 - stem_penalty)
    ```
 
+### 1.3 Pre-grasp Point Selection
+
+The system calculates a safe pre-grasp position that ensures collision-free approach to the final grasp point. The pre-grasp point is positioned along the line between the camera origin and grasp point while maintaining the same Z-coordinate for smooth approach.
+
+Key features:
+- Maintains minimum 15cm distance from grasp point for safety
+- Maximum approach distance of 25cm
+- Ensures clearance from all detected leaves using dilated masks
+- Verifies point remains within camera frame
+
+Implementation highlights:
+```python
+# Calculate approach vector from camera to grasp point
+direction = grasp_point - camera_origin
+direction = direction / np.linalg.norm(direction)
+
+# Calculate test point with safety constraints
+test_point = (
+    grasp_point[0] - direction[0] * distance,
+    grasp_point[1] - direction[1] * distance,
+    grasp_point[2]  # Maintain Z-coordinate
+)
+```
+
 <div align="center">
   <img src="assets/traditional_pipeline.png" width="800"/>
   <p><i>Traditional CV pipeline visualization showing SDF mapping (left), score heatmaps (center), and final grasp point selection with approach vector (right)</i></p>
@@ -258,11 +255,12 @@ After leaf selection, the system determines optimal grasp points using:
 The traditional CV pipeline acts as an expert teacher, automatically generating training data through real-time operation.
 
 - **Sample Generation**:
-  - Positive samples from successful geometric grasps
+  - Positive samples from successful geometric grasps with data augmentation (90°, 180°, 270° rotations)
   - Negative samples from high-risk regions:
     * Leaf tips (distance transform maxima)
     * Stem regions (bottom 25% morphology)
     * High-curvature edges
+  - Automated validation for patch quality and depth consistency
 
 - **Feature Extraction** (32×32 patches):
   ```python
@@ -277,7 +275,7 @@ The traditional CV pipeline acts as an expert teacher, automatically generating 
 ```python
 CNN Architecture:
 ├── Input: 9-channel features (32×32)
-├── Encoder Blocks
+├── Encoder Blocks (with BatchNorm & Dropout)
 │   ├── Block 1: 64 filters (16×16)
 │   ├── Block 2: 128 filters (8×8)
 │   └── Block 3: 256 filters (4×4)
@@ -285,21 +283,10 @@ CNN Architecture:
 │   └── Spatial attention weights
 └── Classification Head
     ├── Global Average Pooling
-    └── Dense: 256 → 128 → 64 → 1
+    └── Dense: 256 → 128 → 64 → 1 (with BatchNorm)
 ```
 
 #### 2.3 Training Process and Results
-
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <figure style="width: 48%;">
-        <img src="assets/training_metrics.png" width="100%" alt="Training Metrics"/>
-        <figcaption><i>Training curves showing loss convergence and accuracy metrics</i></figcaption>
-    </figure>
-    <figure style="width: 48%;">
-        <img src="assets/ml_visualization.png" width="100%" alt="ML Results"/>
-        <figcaption><i>ML model predictions (right) compared to traditional CV selections (left)</i></figcaption>
-    </figure>
-</div>
 
 - **Dataset Composition**:
   ```
@@ -316,22 +303,53 @@ CNN Architecture:
   learning_rate = 0.0005
   weight_decay = 0.01
   pos_weight = 2.0  # Class imbalance handling
+  early_stopping:
+    patience = 15
+    min_delta = 0.001
   ```
 
-- **Performance Metrics**:
-  - Validation Accuracy: 93.14%
-  - F1 Score: 94.79%
-  - Early stopping at epoch 57
+Training implements early stopping with model checkpointing, learning rate scheduling, and gradient clipping for stability. The model converged at epoch 57, achieving excellent performance metrics (detailed in Performance Analysis section).
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <figure style="width: 48%;">
+        <img src="assets/training_metrics.png" width="100%" alt="Training Metrics"/>
+        <figcaption><i>Training curves showing loss convergence and accuracy metrics</i></figcaption>
+    </figure>
+    <figure style="width: 48%;">
+        <img src="assets/ml_visualization.png" width="100%" alt="ML Results"/>
+        <figcaption><i>ML model predictions (right) compared to traditional CV selections (left)</i></figcaption>
+    </figure>
+</div>
 
 ### 3. Hybrid Decision Integration
 
-The final system combines traditional CV expertise with ML predictions for robust grasp point selection:
+The system implements a sophisticated hybrid approach that combines traditional CV expertise with ML refinement for robust grasp point selection:
 
-1. Traditional CV pipeline identifies optimal leaf and candidate grasp regions
-2. ML model evaluates and refines grasp point selection
-3. Pre-grasp point calculation ensures safe approach trajectories
+1. **Candidate Generation**:
+   - Traditional CV pipeline identifies optimal leaf using Pareto optimization
+   - Generates top-20 candidate grasp points using geometric scoring
+   - Enforces minimum 10px spacing between candidates for diversity
 
-This hybrid approach leverages both geometric understanding from traditional CV and learned patterns from the ML model, resulting in more reliable grasp point selection.
+2. **Hybrid Scoring**:
+   - Traditional score (70-90%): Combined geometric metrics
+   - ML refinement (10-30%): CNN confidence-based weighting
+   ```python
+   ml_conf = 1.0 - abs(ml_score - 0.5) * 2
+   ml_weight = min(0.3, ml_conf * 0.6)
+   final_score = (1 - ml_weight) * trad_score + ml_weight * ml_score
+   ```
+
+3. **Real-time Integration**:
+   - ML influence varies based on prediction confidence
+   - Falls back to traditional scoring for low-confidence predictions
+   - Pre-grasp validation ensures collision-free trajectories
+
+The integration of ML with traditional CV creates a system that is both robust and adaptable. While the traditional CV pipeline excels at geometric reasoning with fixed heuristics, the ML component enables the system to learn from operational experience and adapt to new scenarios. This self-supervised learning approach, where the CV pipeline acts as a teacher, allows continuous improvement without manual labeling. The current 70-30 weighting between CV and ML components balances proven geometric constraints with learned patterns, enabling the system to handle both clear geometric cases and more ambiguous situations. As the operational dataset grows, this ratio can be dynamically adjusted based on performance metrics, potentially allowing greater ML influence in decision-making.
+
+<div align="center">
+  <img src="assets/hybrid_pipeline.png" width="800"/>
+  <p><i>Hybrid pipeline visualization showing candidate generation, ML refinement, and final grasp selection with approach trajectories</i></p>
+</div>
 
 ## Performance Analysis
 
