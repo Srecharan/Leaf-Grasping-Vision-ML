@@ -393,9 +393,9 @@ Performance metrics based on systematic evaluation over diverse leaf configurati
 
 ## System Integration & Demonstration
 
-<div align="center">
-  <img src="assets/rex_grasp.gif" width="800"/>
-  <p><i>REX gantry robot demonstrating complete pipeline: perception, planning, and leaf grasping execution</i></p>
+<div style="text-align: center;">
+    <img src="assets/rex_grasp.gif" alt="Real Robot Operation"/>
+    <p><em>REX gantry robot demonstrating complete pipeline: perception, planning, and leaf grasping execution</em></p>
 </div>
 
 ## License
