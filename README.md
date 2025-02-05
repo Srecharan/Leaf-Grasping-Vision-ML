@@ -71,6 +71,12 @@ An intelligent computer vision system that combines traditional CV algorithms wi
                             [Grasp Point]───────────>[Pre-grasp Point]
 ```
 
+
+<div align="center">
+  <img src="assets/pcd.gif" width="800"/>
+  <p><i>Complete stereo vision pipeline: RGB stereo input, disparity map generation, and resulting 3D point cloud reconstruction</i></p>
+</div>
+
 ## Note on System Integration
 This system represents the vision and grasping pipeline of the REX (Robot for Extracting leaf samples) platform, integrating three key components:
 
@@ -245,8 +251,8 @@ test_point = (
 ```
 
 <div align="center">
-  <img src="assets/traditional_pipeline.png" width="800"/>
-  <p><i>Traditional CV pipeline visualization showing SDF mapping (left), score heatmaps (center), and final grasp point selection with approach vector (right)</i></p>
+  <img src="assets/cv_output.png" width="800"/>
+  <p><i>Traditional CV pipeline output: Segmented leaf visualization with grasp point selection (left), and raw stereo camera image with detected leaf midrib (right)</i></p>
 </div>
 
 ### 2. ML-Enhanced Decision Making
@@ -270,6 +276,10 @@ The traditional CV pipeline acts as an expert teacher, automatically generating 
       score_patches        # 7 geometric score maps
   ], dim=1)
   ```
+<div align="center">
+  <img src="assets/data_collection.gif" width="600"/>
+  <p><i>Time-lapse visualization of tomato plant growth, demonstrating system adaptability to varying leaf morphologies</i></p>
+</div>
 
 #### 2.2 Neural Network Architecture
 ```python
@@ -307,18 +317,9 @@ CNN Architecture:
     patience = 15
     min_delta = 0.001
   ```
-
-Training implements early stopping with model checkpointing, learning rate scheduling, and gradient clipping for stability. The model converged at epoch 57, achieving excellent performance metrics (detailed in Performance Analysis section).
-
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <figure style="width: 48%;">
-        <img src="assets/training_metrics.png" width="100%" alt="Training Metrics"/>
-        <figcaption><i>Training curves showing loss convergence and accuracy metrics</i></figcaption>
-    </figure>
-    <figure style="width: 48%;">
-        <img src="assets/ml_visualization.png" width="100%" alt="ML Results"/>
-        <figcaption><i>ML model predictions (right) compared to traditional CV selections (left)</i></figcaption>
-    </figure>
+<div align="center">
+    <img src="assets/training_metrics.png" width="100%"/>
+    <p><i>Training curves showing loss convergence and accuracy metrics over training epochs</i></p>
 </div>
 
 ### 3. Hybrid Decision Integration
@@ -347,27 +348,53 @@ The system implements a sophisticated hybrid approach that combines traditional 
 The integration of ML with traditional CV creates a system that is both robust and adaptable. While the traditional CV pipeline excels at geometric reasoning with fixed heuristics, the ML component enables the system to learn from operational experience and adapt to new scenarios. This self-supervised learning approach, where the CV pipeline acts as a teacher, allows continuous improvement without manual labeling. The current 70-30 weighting between CV and ML components balances proven geometric constraints with learned patterns, enabling the system to handle both clear geometric cases and more ambiguous situations. As the operational dataset grows, this ratio can be dynamically adjusted based on performance metrics, potentially allowing greater ML influence in decision-making.
 
 <div align="center">
-  <img src="assets/hybrid_pipeline.png" width="800"/>
-  <p><i>Hybrid pipeline visualization showing candidate generation, ML refinement, and final grasp selection with approach trajectories</i></p>
+  <img src="assets/hybrid_op.png" width="800"/>
+  <p><i>Hybrid CV-ML pipeline output: Segmented leaf visualization with grasp point selection (left), and raw stereo camera image with detected leaf midrib (right)</i></p>
 </div>
 
 ## Performance Analysis
 
+### Geometric Accuracy Assessment
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="width: 48%;">
+        <img src="assets/curvature.gif" width="100%"/>
+        <p align="center"><i>3D point cloud visualization showing detailed geometric capture of leaf surface</i></p>
+    </div>
+    <div style="width: 48%;">
+        <img src="assets/curvature_plot.png" width="100%"/>
+        <p align="center"><i>MATLAB surface plot analysis showing leaf curvature distribution</i></p>
+    </div>
+</div>
+
 ### Model Metrics
-| Metric               | Value  |
-|---------------------|--------|
-| Validation Accuracy | 93.14% |
-| Positive Accuracy   | 97.09% |
-| F1 Score           | 94.79% |
+| Metric                | Value  | Description |
+|----------------------|--------|-------------|
+| Validation Accuracy  | 93.14% | Overall model accuracy on validation set |
+| Positive Accuracy    | 97.09% | Accuracy for successful grasp points |
+| Precision           | 92.59% | True positives / predicted positives |
+| Recall              | 97.09% | True positives / actual positives |
+| F1 Score            | 94.79% | Balanced measure of precision and recall |
 
-### System Performance (100 test cases)
-| Metric                     | Classical CV | Hybrid (CV+ML) |
-|---------------------------|--------------|----------------|
-| Accuracy (px)             | 25.3         | 27.1          |
-| Feature Alignment (%)     | 87.5         | 91.2          |
-| Edge Case Handling (%)    | 92.3         | 94.8          |
-| Overall Success Rate (%)  | 85.6         | 90.8          |
+### System Performance (150 test cases)
+| Metric                     | Classical CV | Hybrid (CV+ML) | Improvement |
+|---------------------------|--------------|----------------|-------------|
+| Accuracy (px)             | 25.3         | 27.1          | +1.8        |
+| Feature Alignment (%)     | 80.67        | 83.33         | +2.66       |
+| Edge Case Handling (%)    | 75.33        | 77.33         | +2.00       |
+| Overall Success Rate (%)  | 78.00        | 82.66         | +4.66       |
 
+Performance metrics based on systematic evaluation over diverse leaf configurations, assessing grasp point quality through factors such as point placement accuracy, feature alignment, approach vector feasibility, and execution success.
+
+## System Integration & Hardware Demonstration
+
+<div align="center" style="transform: rotate(90deg); transform-origin: center; margin: 200px 0;">
+  <div style="width: 400px;">  <!-- Adjust width as needed -->
+    <img src="assets/rex_grasp.gif" style="width: 100%; display: block;"/>
+  </div>
+</div>
+<div align="center">
+  <p><i>REX gantry robot performing autonomous leaf grasping: motion planning, approach trajectory, and successful grasp execution</i></p>
+</div>
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

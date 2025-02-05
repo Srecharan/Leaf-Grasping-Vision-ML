@@ -181,76 +181,76 @@ class GraspPointSelector:
     
     
     # This Funtion combines the traditional scire and ML score (7:3)
-    # def select_grasp_point(self, leaf_mask, depth_tensor, image_processor, pcl_data=None):
-    #     """Select optimal grasp point using combined traditional and ML approach"""
-    #     try:
-    #         leaf_mask_np = leaf_mask.cpu().numpy().astype(np.uint8)
+    def select_grasp_point(self, leaf_mask, depth_tensor, image_processor, pcl_data=None):
+        """Select optimal grasp point using combined traditional and ML approach"""
+        try:
+            leaf_mask_np = leaf_mask.cpu().numpy().astype(np.uint8)
             
-    #         # Calculate scores and valid regions
-    #         scores = self._calculate_all_scores(leaf_mask_np, depth_tensor, image_processor)
-    #         valid_regions = self._get_valid_regions(leaf_mask_np, scores)
+            # Calculate scores and valid regions
+            scores = self._calculate_all_scores(leaf_mask_np, depth_tensor, image_processor)
+            valid_regions = self._get_valid_regions(leaf_mask_np, scores)
             
-    #         # Get candidate points
-    #         candidate_points = self._get_candidate_points(
-    #             scores['traditional_score'], 
-    #             valid_regions,
-    #             top_k=20,
-    #             min_distance=10
-    #         )
+            # Get candidate points
+            candidate_points = self._get_candidate_points(
+                scores['traditional_score'], 
+                valid_regions,
+                top_k=20,
+                min_distance=10
+            )
             
-    #         if not candidate_points:
-    #             rospy.logwarn("No valid candidate points found")
-    #             return None, None, None
+            if not candidate_points:
+                rospy.logwarn("No valid candidate points found")
+                return None, None, None
                 
-    #         best_point = candidate_points[0]  # Default to highest traditional score
-    #         best_score = scores['traditional_score'][best_point[1], best_point[0]]
-    #         ml_used = False
+            best_point = candidate_points[0]  # Default to highest traditional score
+            best_score = scores['traditional_score'][best_point[1], best_point[0]]
+            ml_used = False
             
-    #         # Try ML evaluation if available
-    #         if self.ml_predictor is not None and len(candidate_points) > 1:
-    #             rospy.loginfo(f"Evaluating {len(candidate_points)} points with ML model")
+            # Try ML evaluation if available
+            if self.ml_predictor is not None and len(candidate_points) > 1:
+                rospy.loginfo(f"Evaluating {len(candidate_points)} points with ML model")
                 
-    #             for point in candidate_points:
-    #                 x, y = point
-    #                 trad_score = scores['traditional_score'][y, x]
+                for point in candidate_points:
+                    x, y = point
+                    trad_score = scores['traditional_score'][y, x]
                     
-    #                 # Get ML score
-    #                 ml_score = self.get_ml_score(leaf_mask, depth_tensor, scores, point)
+                    # Get ML score
+                    ml_score = self.get_ml_score(leaf_mask, depth_tensor, scores, point)
                     
-    #                 if ml_score is not None:
-    #                     # Calculate confidence-based weights
-    #                     ml_conf = 1.0 - abs(ml_score - 0.5) * 2
-    #                     ml_weight = min(0.3, ml_conf * 0.6)  # Cap at 0.3
-    #                     trad_weight = 1.0 - ml_weight
+                    if ml_score is not None:
+                        # Calculate confidence-based weights
+                        ml_conf = 1.0 - abs(ml_score - 0.5) * 2
+                        ml_weight = min(0.3, ml_conf * 0.6)  # Cap at 0.3
+                        trad_weight = 1.0 - ml_weight
                         
-    #                     combined_score = trad_weight * trad_score + ml_weight * ml_score
+                        combined_score = trad_weight * trad_score + ml_weight * ml_score
                         
-    #                     rospy.loginfo(f"Point ({x}, {y}):")
-    #                     rospy.loginfo(f"  Traditional: {trad_score:.3f}")
-    #                     rospy.loginfo(f"  ML Score: {ml_score:.3f} (conf: {ml_conf:.3f})")
-    #                     rospy.loginfo(f"  Combined: {combined_score:.3f}")
+                        rospy.loginfo(f"Point ({x}, {y}):")
+                        rospy.loginfo(f"  Traditional: {trad_score:.3f}")
+                        rospy.loginfo(f"  ML Score: {ml_score:.3f} (conf: {ml_conf:.3f})")
+                        rospy.loginfo(f"  Combined: {combined_score:.3f}")
                         
-    #                     if combined_score > best_score:
-    #                         best_score = combined_score
-    #                         best_point = point
-    #                         ml_used = True
-    #                         rospy.loginfo("  New best point!")
+                        if combined_score > best_score:
+                            best_score = combined_score
+                            best_point = point
+                            ml_used = True
+                            rospy.loginfo("  New best point!")
             
-    #         # Calculate 3D points
-    #         grasp_point_2d = best_point
-    #         grasp_point_3d = self.get_3d_grasp_point(grasp_point_2d, depth_tensor, pcl_data)
-    #         pre_grasp_point = self.calculate_pre_grasp_point(grasp_point_3d, leaf_mask_np)
+            # Calculate 3D points
+            grasp_point_2d = best_point
+            grasp_point_3d = self.get_3d_grasp_point(grasp_point_2d, depth_tensor, pcl_data)
+            pre_grasp_point = self.calculate_pre_grasp_point(grasp_point_3d, leaf_mask_np)
             
-    #         if ml_used:
-    #             rospy.loginfo("Final point selected with ML influence")
-    #         else:
-    #             rospy.loginfo("Final point selected using traditional scoring only")
+            if ml_used:
+                rospy.loginfo("Final point selected with ML influence")
+            else:
+                rospy.loginfo("Final point selected using traditional scoring only")
                 
-    #         return grasp_point_2d, grasp_point_3d, pre_grasp_point
+            return grasp_point_2d, grasp_point_3d, pre_grasp_point
             
-    #     except Exception as e:
-    #         rospy.logerr(f"Error in grasp point selection: {str(e)}")
-    #         return None, None, None
+        except Exception as e:
+            rospy.logerr(f"Error in grasp point selection: {str(e)}")
+            return None, None, None
             
     
     def _calculate_all_scores(self, leaf_mask_np, depth_tensor, image_processor):
@@ -288,106 +288,106 @@ class GraspPointSelector:
         )
                 
     # This Function give grasping pint based on only ML model       
-    def select_grasp_point(self, leaf_mask, depth_tensor, image_processor, pcl_data=None):
-        """Select grasp point using ML model only"""
-        try:
-            leaf_mask_np = leaf_mask.cpu().numpy().astype(np.uint8)
+    # def select_grasp_point(self, leaf_mask, depth_tensor, image_processor, pcl_data=None):
+    #     """Select grasp point using ML model only"""
+    #     try:
+    #         leaf_mask_np = leaf_mask.cpu().numpy().astype(np.uint8)
             
-            # Calculate scores for ML features
-            scores = {
-                'sdf_score': self.calculate_sdf_score(leaf_mask_np),
-                'approach_score': self.calculate_approach_vector_score(leaf_mask_np, depth_tensor),
-                'flatness_map': self._calculate_flatness_map(
-                    depth_tensor * leaf_mask.float(), image_processor).cpu().numpy(),
-                'isolation_map': self._calculate_isolation_score(leaf_mask_np),
-                'distance_map': cv2.distanceTransform(leaf_mask_np, cv2.DIST_L2, 5),
-                'accessibility_map': self._calculate_accessibility_score(leaf_mask_np),
-                'stem_penalty': self._calculate_stem_penalty(leaf_mask_np).astype(np.float32)
-            }
+    #         # Calculate scores for ML features
+    #         scores = {
+    #             'sdf_score': self.calculate_sdf_score(leaf_mask_np),
+    #             'approach_score': self.calculate_approach_vector_score(leaf_mask_np, depth_tensor),
+    #             'flatness_map': self._calculate_flatness_map(
+    #                 depth_tensor * leaf_mask.float(), image_processor).cpu().numpy(),
+    #             'isolation_map': self._calculate_isolation_score(leaf_mask_np),
+    #             'distance_map': cv2.distanceTransform(leaf_mask_np, cv2.DIST_L2, 5),
+    #             'accessibility_map': self._calculate_accessibility_score(leaf_mask_np),
+    #             'stem_penalty': self._calculate_stem_penalty(leaf_mask_np).astype(np.float32)
+    #         }
 
-            if self.ml_predictor is not None:
-                # Get points where leaf mask is True
-                y_coords, x_coords = np.where(leaf_mask_np > 0)
+    #         if self.ml_predictor is not None:
+    #             # Get points where leaf mask is True
+    #             y_coords, x_coords = np.where(leaf_mask_np > 0)
                 
-                best_score = float('-inf')
-                best_point = None
+    #             best_score = float('-inf')
+    #             best_point = None
                 
-                rospy.loginfo("Evaluating points with ML model...")
+    #             rospy.loginfo("Evaluating points with ML model...")
                 
-                # Sample fewer points for efficiency
-                step = max(1, len(y_coords) // 100)  # Sample ~100 points
-                for i in range(0, len(y_coords), step):
-                    x, y = x_coords[i], y_coords[i]
+    #             # Sample fewer points for efficiency
+    #             step = max(1, len(y_coords) // 100)  # Sample ~100 points
+    #             for i in range(0, len(y_coords), step):
+    #                 x, y = x_coords[i], y_coords[i]
                     
-                    # Check boundaries for patch extraction
-                    patch_size = 32
-                    half_size = patch_size // 2
+    #                 # Check boundaries for patch extraction
+    #                 patch_size = 32
+    #                 half_size = patch_size // 2
                     
-                    if (y < half_size or y >= leaf_mask_np.shape[0] - half_size or 
-                        x < half_size or x >= leaf_mask_np.shape[1] - half_size):
-                        continue
+    #                 if (y < half_size or y >= leaf_mask_np.shape[0] - half_size or 
+    #                     x < half_size or x >= leaf_mask_np.shape[1] - half_size):
+    #                     continue
                     
-                    # Extract patches with proper dimensionality
-                    depth_patch = depth_tensor[y-half_size:y+half_size, x-half_size:x+half_size].clone()
-                    mask_patch = leaf_mask[y-half_size:y+half_size, x-half_size:x+half_size].clone()
+    #                 # Extract patches with proper dimensionality
+    #                 depth_patch = depth_tensor[y-half_size:y+half_size, x-half_size:x+half_size].clone()
+    #                 mask_patch = leaf_mask[y-half_size:y+half_size, x-half_size:x+half_size].clone()
                     
-                    # Skip if patches are empty
-                    if depth_patch.numel() == 0 or mask_patch.numel() == 0:
-                        continue
+    #                 # Skip if patches are empty
+    #                 if depth_patch.numel() == 0 or mask_patch.numel() == 0:
+    #                     continue
                     
-                    # Extract score patches
-                    score_patches = []
-                    for score_name in scores:
-                        score_map = scores[score_name]
-                        patch = score_map[y-half_size:y+half_size, x-half_size:x+half_size]
-                        score_patches.append(torch.from_numpy(patch).float().to(self.device))
+    #                 # Extract score patches
+    #                 score_patches = []
+    #                 for score_name in scores:
+    #                     score_map = scores[score_name]
+    #                     patch = score_map[y-half_size:y+half_size, x-half_size:x+half_size]
+    #                     score_patches.append(torch.from_numpy(patch).float().to(self.device))
                     
-                    # Prepare input for ML model
-                    model_input = {
-                        'depth_patch': depth_patch.unsqueeze(0).unsqueeze(0),  # Add batch and channel dims
-                        'mask_patch': mask_patch.unsqueeze(0).unsqueeze(0),
-                        'score_patches': torch.stack(score_patches).unsqueeze(0)
-                    }
+    #                 # Prepare input for ML model
+    #                 model_input = {
+    #                     'depth_patch': depth_patch.unsqueeze(0).unsqueeze(0),  # Add batch and channel dims
+    #                     'mask_patch': mask_patch.unsqueeze(0).unsqueeze(0),
+    #                     'score_patches': torch.stack(score_patches).unsqueeze(0)
+    #                 }
                     
-                    # Get ML prediction
-                    with torch.no_grad():
-                        self.ml_predictor.eval()
-                        score = self.ml_predictor(torch.cat([
-                            model_input['depth_patch'],
-                            model_input['mask_patch'],
-                            model_input['score_patches']
-                        ], dim=1))
-                        score = torch.sigmoid(score).item()
+    #                 # Get ML prediction
+    #                 with torch.no_grad():
+    #                     self.ml_predictor.eval()
+    #                     score = self.ml_predictor(torch.cat([
+    #                         model_input['depth_patch'],
+    #                         model_input['mask_patch'],
+    #                         model_input['score_patches']
+    #                     ], dim=1))
+    #                     score = torch.sigmoid(score).item()
                     
-                    rospy.loginfo(f"Point ({x}, {y}) ML score: {score:.3f}")
+    #                 rospy.loginfo(f"Point ({x}, {y}) ML score: {score:.3f}")
                     
-                    if score > best_score:
-                        best_score = score
-                        best_point = (x, y)
+    #                 if score > best_score:
+    #                     best_score = score
+    #                     best_point = (x, y)
                 
-                if best_point is not None:
-                    grasp_point_2d = best_point
-                    rospy.loginfo(f"ML Model selected point {grasp_point_2d} with score {best_score:.3f}")
-                else:
-                    rospy.logwarn("ML failed to find valid point, using centroid")
-                    grasp_point_2d = image_processor.calculate_centroid(leaf_mask)
-                    grasp_point_2d = (int(grasp_point_2d[0]), int(grasp_point_2d[1]))
-            else:
-                rospy.logwarn("No ML model available!")
-                grasp_point_2d = image_processor.calculate_centroid(leaf_mask)
-                grasp_point_2d = (int(grasp_point_2d[0]), int(grasp_point_2d[1]))
+    #             if best_point is not None:
+    #                 grasp_point_2d = best_point
+    #                 rospy.loginfo(f"ML Model selected point {grasp_point_2d} with score {best_score:.3f}")
+    #             else:
+    #                 rospy.logwarn("ML failed to find valid point, using centroid")
+    #                 grasp_point_2d = image_processor.calculate_centroid(leaf_mask)
+    #                 grasp_point_2d = (int(grasp_point_2d[0]), int(grasp_point_2d[1]))
+    #         else:
+    #             rospy.logwarn("No ML model available!")
+    #             grasp_point_2d = image_processor.calculate_centroid(leaf_mask)
+    #             grasp_point_2d = (int(grasp_point_2d[0]), int(grasp_point_2d[1]))
 
-            # Calculate 3D points
-            grasp_point_3d = self.get_3d_grasp_point(grasp_point_2d, depth_tensor, pcl_data)
-            pre_grasp_point = self.calculate_pre_grasp_point(grasp_point_3d, leaf_mask_np)
+    #         # Calculate 3D points
+    #         grasp_point_3d = self.get_3d_grasp_point(grasp_point_2d, depth_tensor, pcl_data)
+    #         pre_grasp_point = self.calculate_pre_grasp_point(grasp_point_3d, leaf_mask_np)
 
-            return grasp_point_2d, grasp_point_3d, pre_grasp_point
+    #         return grasp_point_2d, grasp_point_3d, pre_grasp_point
                 
-        except Exception as e:
-            rospy.logerr(f"Error in ML grasp point selection: {str(e)}")
-            import traceback
-            rospy.logerr(traceback.format_exc())
-            return None, None, None
+    #     except Exception as e:
+    #         rospy.logerr(f"Error in ML grasp point selection: {str(e)}")
+    #         import traceback
+    #         rospy.logerr(traceback.format_exc())
+    #         return None, None, None
                 
     def _extract_local_patch(self, tensor, x, y, size):
         """Extract local patch around point with exact size control"""

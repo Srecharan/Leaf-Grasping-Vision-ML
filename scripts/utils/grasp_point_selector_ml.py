@@ -6,7 +6,7 @@ import rospy
 import cv2
 import os
 from .gpu_manager import GPUManager
-from .ml_grasp_optimizer.data_collector import GraspDataCollector
+from .ml_grasp_optimizer.data_collector import EnhancedGraspDataCollector
 from .ml_grasp_optimizer.model import GraspQualityPredictor
 from .ml_grasp_optimizer.trainer import GraspPointCNN
 
@@ -32,7 +32,7 @@ class GraspPointSelector:
         self.erosion_kernel_size = 21  # Increased from 15
         self.erosion_iterations = 2  
 
-        self.data_collector = GraspDataCollector()
+        #self.data_collector = EnhancedGraspDataCollector()
         self.ml_predictor = None
 
         # Add ML model setup
@@ -220,7 +220,7 @@ class GraspPointSelector:
                     if ml_score is not None:
                         # Calculate confidence-based weights
                         ml_conf = 1.0 - abs(ml_score - 0.5) * 2
-                        ml_weight = min(0.05, ml_conf * 0.4)  # Cap at 0.3
+                        ml_weight = min(0.3, ml_conf * 0.6)  # Cap at 0.3
                         trad_weight = 1.0 - ml_weight
                         
                         combined_score = trad_weight * trad_score + ml_weight * ml_score
@@ -293,7 +293,7 @@ class GraspPointSelector:
     #     try:
     #         leaf_mask_np = leaf_mask.cpu().numpy().astype(np.uint8)
             
-    #         # Calculate scores (needed as input features for ML)
+    #         # Calculate scores for ML features
     #         scores = {
     #             'sdf_score': self.calculate_sdf_score(leaf_mask_np),
     #             'approach_score': self.calculate_approach_vector_score(leaf_mask_np, depth_tensor),
@@ -306,29 +306,63 @@ class GraspPointSelector:
     #         }
 
     #         if self.ml_predictor is not None:
-    #             # Grid search over leaf mask
-    #             best_score = float('-inf')
-    #             best_point = None
-                
     #             # Get points where leaf mask is True
     #             y_coords, x_coords = np.where(leaf_mask_np > 0)
                 
+    #             best_score = float('-inf')
+    #             best_point = None
+                
     #             rospy.loginfo("Evaluating points with ML model...")
                 
-    #             for i in range(len(y_coords)):
+    #             # Sample fewer points for efficiency
+    #             step = max(1, len(y_coords) // 100)  # Sample ~100 points
+    #             for i in range(0, len(y_coords), step):
     #                 x, y = x_coords[i], y_coords[i]
                     
-    #                 # Get ML score for this point
-    #                 local_mask = self._extract_local_patch(leaf_mask, x, y, 32)
-    #                 local_depth = self._extract_local_patch(depth_tensor, x, y, 32)
-    #                 ml_score = self.get_ml_score(local_mask, local_depth, scores, point=(x, y))  # Fixed: Added point parameter
+    #                 # Check boundaries for patch extraction
+    #                 patch_size = 32
+    #                 half_size = patch_size // 2
                     
-    #                 # Debug logging
-    #                 if ml_score is not None:
-    #                     rospy.loginfo(f"Point ({x}, {y}) ML score: {ml_score:.3f}")
+    #                 if (y < half_size or y >= leaf_mask_np.shape[0] - half_size or 
+    #                     x < half_size or x >= leaf_mask_np.shape[1] - half_size):
+    #                     continue
                     
-    #                 if ml_score is not None and ml_score > best_score:
-    #                     best_score = ml_score
+    #                 # Extract patches with proper dimensionality
+    #                 depth_patch = depth_tensor[y-half_size:y+half_size, x-half_size:x+half_size].clone()
+    #                 mask_patch = leaf_mask[y-half_size:y+half_size, x-half_size:x+half_size].clone()
+                    
+    #                 # Skip if patches are empty
+    #                 if depth_patch.numel() == 0 or mask_patch.numel() == 0:
+    #                     continue
+                    
+    #                 # Extract score patches
+    #                 score_patches = []
+    #                 for score_name in scores:
+    #                     score_map = scores[score_name]
+    #                     patch = score_map[y-half_size:y+half_size, x-half_size:x+half_size]
+    #                     score_patches.append(torch.from_numpy(patch).float().to(self.device))
+                    
+    #                 # Prepare input for ML model
+    #                 model_input = {
+    #                     'depth_patch': depth_patch.unsqueeze(0).unsqueeze(0),  # Add batch and channel dims
+    #                     'mask_patch': mask_patch.unsqueeze(0).unsqueeze(0),
+    #                     'score_patches': torch.stack(score_patches).unsqueeze(0)
+    #                 }
+                    
+    #                 # Get ML prediction
+    #                 with torch.no_grad():
+    #                     self.ml_predictor.eval()
+    #                     score = self.ml_predictor(torch.cat([
+    #                         model_input['depth_patch'],
+    #                         model_input['mask_patch'],
+    #                         model_input['score_patches']
+    #                     ], dim=1))
+    #                     score = torch.sigmoid(score).item()
+                    
+    #                 rospy.loginfo(f"Point ({x}, {y}) ML score: {score:.3f}")
+                    
+    #                 if score > best_score:
+    #                     best_score = score
     #                     best_point = (x, y)
                 
     #             if best_point is not None:
@@ -351,8 +385,10 @@ class GraspPointSelector:
                 
     #     except Exception as e:
     #         rospy.logerr(f"Error in ML grasp point selection: {str(e)}")
+    #         import traceback
+    #         rospy.logerr(traceback.format_exc())
     #         return None, None, None
-            
+                
     def _extract_local_patch(self, tensor, x, y, size):
         """Extract local patch around point with exact size control"""
         try:
@@ -884,3 +920,4 @@ class GraspPointSelector:
         except Exception as e:
             rospy.logerr(f"Error in midrib detection: {str(e)}")
             return None
+        
