@@ -6,7 +6,7 @@
 [![CUDA](https://img.shields.io/badge/CUDA-10.2.89-green.svg)](https://developer.nvidia.com/cuda-toolkit)
 
 ## Overview
-An intelligent computer vision system that combines traditional CV algorithms with deep learning for robust leaf manipulation in agricultural robotics. The system implements a novel hybrid approach where classical computer vision acts as a teacher for a self-supervised CNN model, creating a synergistic blend of traditional expertise and modern ML capabilities. Integrated with a 6-DOF gantry robot, this system achieves precise leaf detection, optimal grasp point selection, and successful manipulation for plant sample collection.
+A hybrid computer vision system that combines geometric-based algorithms with deep learning for robust leaf manipulation in agricultural robotics. The system implements a novel self-supervised learning approach where classical CV acts as an expert teacher for a CNN model, enabling adaptive grasp point selection. Integrated with a 6-DOF gantry robot, it achieves high-precision leaf detection and manipulation through real-time depth estimation, instance segmentation, and optimal grasp planning.
 
 ## Key Features
 - Hybrid architecture combining geometric-based CV with deep learning
@@ -354,19 +354,25 @@ The integration of ML with traditional CV creates a system that is both robust a
 
 ## Performance Analysis
 
-### Geometric Accuracy Assessment
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <div style="width: 48%;">
+### 1. Geometric Accuracy Assessment
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="50%">
         <img src="assets/curvature.gif" width="100%"/>
-        <p align="center"><i>3D point cloud visualization showing detailed geometric capture of leaf surface</i></p>
-    </div>
-    <div style="width: 48%;">
+        <br>
+        <i>3D point cloud visualization showing detailed geometric capture of leaf surface</i>
+      </td>
+      <td align="center" width="50%">
         <img src="assets/curvature_plot.png" width="100%"/>
-        <p align="center"><i>MATLAB surface plot analysis showing leaf curvature distribution</i></p>
-    </div>
+        <br>
+        <i>MATLAB surface plot analysis showing leaf curvature distribution</i>
+      </td>
+    </tr>
+  </table>
 </div>
 
-### Model Metrics
+### 2. Model Metrics
 | Metric                | Value  | Description |
 |----------------------|--------|-------------|
 | Validation Accuracy  | 93.14% | Overall model accuracy on validation set |
@@ -375,7 +381,7 @@ The integration of ML with traditional CV creates a system that is both robust a
 | Recall              | 97.09% | True positives / actual positives |
 | F1 Score            | 94.79% | Balanced measure of precision and recall |
 
-### System Performance (150 test cases)
+### 3. System Performance (150 test cases)
 | Metric                     | Classical CV | Hybrid (CV+ML) | Improvement |
 |---------------------------|--------------|----------------|-------------|
 | Accuracy (px)             | 25.3         | 27.1          | +1.8        |
@@ -385,15 +391,11 @@ The integration of ML with traditional CV creates a system that is both robust a
 
 Performance metrics based on systematic evaluation over diverse leaf configurations, assessing grasp point quality through factors such as point placement accuracy, feature alignment, approach vector feasibility, and execution success.
 
-## System Integration & Hardware Demonstration
+## System Integration & Demonstration
 
-<div align="center" style="transform: rotate(90deg); transform-origin: center; margin: 200px 0;">
-  <div style="width: 400px;">  <!-- Adjust width as needed -->
-    <img src="assets/rex_grasp.gif" style="width: 100%; display: block;"/>
-  </div>
-</div>
 <div align="center">
-  <p><i>REX gantry robot performing autonomous leaf grasping: motion planning, approach trajectory, and successful grasp execution</i></p>
+  <img src="assets/rex_grasp.gif" width="800"/>
+  <p><i>REX gantry robot demonstrating complete pipeline: perception, planning, and leaf grasping execution</i></p>
 </div>
 
 ## License
