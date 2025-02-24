@@ -8,6 +8,18 @@
 ## Overview
 A hybrid computer vision system that combines geometric-based algorithms with deep learning for robust leaf manipulation in agricultural robotics. The system implements a novel self-supervised learning approach where classical CV acts as an expert teacher for a CNN model, enabling adaptive grasp point selection. Integrated with a 6-DOF gantry robot, it achieves high-precision leaf detection and manipulation through real-time depth estimation, instance segmentation, and optimal grasp planning.
 
+## 1-min Overview
+
+<div align="center">
+  <a href="https://youtu.be/eRFWZjJbcgI  #remove">
+    <img src="https://img.youtube.com/vi/eRFWZjJbcgI/maxresdefault.jpg #remove" alt="Watch the video" style="width: 100%; max-width: 800px;">
+    <br>
+    <img src="https://img.shields.io/badge/Watch%20on-YouTube-red?style=for-the-badge&logo=youtube" alt="Watch on YouTube">
+  </a>
+  <br><br>
+  <em>Technical overview of LeafGrasp-Vision's architecture and implementation</em>
+</div>
+
 ## Key Features
 - Hybrid architecture combining geometric-based CV with deep learning
 - Self-supervised learning leveraging traditional CV expertise
