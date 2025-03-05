@@ -8,7 +8,7 @@
 ## Overview
 A hybrid computer vision system that combines geometric-based algorithms with deep learning for robust leaf manipulation in agricultural robotics. The system implements a novel self-supervised learning approach where classical CV acts as an expert teacher for a CNN model, enabling adaptive grasp point selection. Integrated with a 6-DOF gantry robot, it achieves high-precision leaf detection and manipulation through real-time depth estimation, instance segmentation, and optimal grasp planning.
 
-Link the PDF here assests/Technical_overview.pdf
+For detailed technical specifications and methodologies, please refer to the [Technical Overview](assets/Technical_overview.pdf).
 
 ## Key Features
 - Hybrid architecture combining geometric-based CV with deep learning
@@ -21,58 +21,11 @@ Link the PDF here assests/Technical_overview.pdf
 - Automated data collection and continuous learning pipeline
 
 ## System Architecture
-```
-                        [Stereo Camera Input]
-                                │
-                ┌─────────────────────────────────┐
-                v                                 v
-            [Left Image]             [Stereo Pair (Left + Right Image)]
-                │                                 │
-                │                                 │
-                │                                 │
-                │                                 │
-                v                                 v
-            [YOLOv8 Segmentation]           [RAFT-Stereo Node]
-                |                                 |
-                |                                 ├──────> [Depth Maps]
-                │                                 ├──────> [Disparity]
-                |───>[Segmented Masks]            ├──────> [Point Clouds]
-                │                                 │
-                └───────────────┐─────────────────┘
-                                |
-                                v
-                        [Leaf Grasp Node]
-                                │
-                                v
-                    [Traditional CV Pipeline]
-                                │
-                        [Leaf Selection]
-                    ┌───────────┴─────────────┐
-                    v                         v
-            [Pareto Optimization]     [Tall Leaf Detection]
-                    │                         │
-                    └───────────┐─────────────┘
-                                │
-                    [Optimal Leaf Selection]
-                    ┌───────────┴───────────┐
-                    v                       v
-            [Feature Extraction]    [Score Generation]
-                    │                       │
-                    v                       v
-            [ML Enhancement Layer]   [Classical Scores]
-                    │                       │
-                    └───────────┐───────────┘
-                                |
-                                v
-                        [Hybrid Decision]
-                                │
-                                v
-                        [Final Grasp Selection]
-                                │
-                                v
-                            [Grasp Point]───────────>[Pre-grasp Point]
-```
 
+<div align="center">
+  <img src="assets/REX.drawio_f.png" width="3000"/>
+  <p><i>Hybrid approach combining traditional CV with ML enhancement for optimal leaf grasping</i></p>
+</div>
 
 <div align="center">
   <img src="assets/pcd.gif" width="800"/>
@@ -284,19 +237,10 @@ The traditional CV pipeline acts as an expert teacher, automatically generating 
 </div>
 
 #### 2.2 Neural Network Architecture
-```python
-CNN Architecture:
-├── Input: 9-channel features (32×32)
-├── Encoder Blocks (with BatchNorm & Dropout)
-│   ├── Block 1: 64 filters (16×16)
-│   ├── Block 2: 128 filters (8×8)
-│   └── Block 3: 256 filters (4×4)
-├── Attention Mechanism
-│   └── Spatial attention weights
-└── Classification Head
-    ├── Global Average Pooling
-    └── Dense: 256 → 128 → 64 → 1 (with BatchNorm)
-```
+<div align="center">
+  <img src="assets/CNN_grasp.drawio.png" width="600"/>
+  <p><i>GraspPointCNN architecture: A 9-channel input feature map processed through three encoder blocks with an attention mechanism, followed by dense layers and global average pooling for grasp quality prediction</i></p>
+</div>
 
 #### 2.3 Training Process and Results
 
