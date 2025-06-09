@@ -268,6 +268,36 @@ The traditional CV pipeline acts as an expert teacher, automatically generating 
     patience = 15
     min_delta = 0.001
   ```
+
+- **MLflow Experiment Tracking**:
+  The system uses MLflow for comprehensive experiment management, tracking 60+ model configurations across different attention mechanisms (spatial, channel, hybrid) and architectural variants. Each experiment logs hyperparameters, training metrics, and model artifacts for systematic optimization.
+  
+  ```python
+  import mlflow
+  import mlflow.pytorch
+  
+  # Initialize experiment
+  mlflow.set_experiment("grasp_point_cnn")
+  
+  with mlflow.start_run():
+      # Log hyperparameters
+      mlflow.log_params({
+          "attention_type": "spatial",
+          "architecture": "standard", 
+          "learning_rate": 0.0005,
+          "batch_size": 16
+      })
+      
+      # Log training metrics
+      mlflow.log_metrics({
+          "train_loss": loss.item(),
+          "val_accuracy": accuracy,
+          "f1_score": f1
+      })
+      
+      # Save model artifact
+      mlflow.pytorch.log_model(model, "model")
+  ```
 <div align="center">
     <img src="assets/training_metrics.png" width="100%"/>
     <p><i>Training curves showing loss convergence and accuracy metrics over training epochs</i></p>
