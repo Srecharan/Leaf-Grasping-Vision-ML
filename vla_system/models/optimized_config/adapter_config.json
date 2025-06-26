@@ -1,0 +1,16 @@
+{
+  "base_model_name_or_path": "llava-hf/llava-1.6-mistral-7b-hf",
+  "lora_alpha": 48,
+  "lora_dropout": 0.05,
+  "r": 12,
+  "target_modules": [
+    "q_proj",
+    "v_proj",
+    "k_proj",
+    "o_proj",
+    "gate_proj",
+    "up_proj",
+    "down_proj"
+  ],
+  "task_type": "VLA_LEAF_GRASPING"
+}

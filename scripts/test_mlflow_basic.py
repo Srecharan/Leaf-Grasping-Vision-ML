@@ -145,7 +145,7 @@ def test_mlflow_ui_setup():
         if contents:
             print(f"✓ Found experiment files: {contents}")
         
-        print(f"\n📊 To view MLflow UI:")
+        print(f"\nTo view MLflow UI:")
         print(f"   1. Run: python3 -m mlflow ui --backend-store-uri file://{mlflow_dir}")
         print(f"   2. Open browser to: http://localhost:5000")
         print(f"   3. View experiment comparisons and metrics")
@@ -183,7 +183,7 @@ def main():
     print(f"MLflow Integration Test Results: {success_count}/{total_tests} tests passed")
     
     if success_count == total_tests:
-        print("🎉 All tests passed! MLflow integration is working correctly.")
+        print("All tests passed! MLflow integration is working correctly.")
         print("\nFeatures working:")
         print("✓ MLflow experiment tracking")
         print("✓ Hyperparameter logging")

@@ -70,7 +70,7 @@ class EnhancedGraspDataCollector:
                 self.stats['negative_samples'] = sum(1 for s in self.samples 
                                                    if s['label'] == 0)
                 
-                rospy.loginfo("Successfully loaded existing data")
+                rospy.loginfo("Loaded existing data")
                 rospy.loginfo(f"Continuing from {self.stats['positive_samples']} positive samples")
             else:
                 rospy.loginfo("No existing data found. Starting fresh collection.")

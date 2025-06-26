@@ -152,7 +152,7 @@ class GraspPointSelector:
                     np.max(traditional_score)
                 )
                 if success:
-                    rospy.loginfo("Successfully collected training sample")
+                    rospy.loginfo("Collected training sample")
                         
             return grasp_point_2d, grasp_point_3d, pre_grasp_point
                 

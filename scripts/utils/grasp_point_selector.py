@@ -48,7 +48,7 @@ class GraspPointSelector:
                 checkpoint = torch.load(model_path)
                 self.ml_predictor.load_state_dict(checkpoint['model_state_dict'])  # Use ml_predictor
                 self.ml_predictor.eval()
-                rospy.loginfo("Loaded ML grasp model successfully")
+                rospy.loginfo("Loaded ML grasp model")
             else:
                 rospy.logwarn("No ML model found, will use traditional scoring only")
                 self.ml_predictor = None  # Set to None if no model found

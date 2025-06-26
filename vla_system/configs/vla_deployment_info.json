@@ -1,0 +1,13 @@
+{
+  "model_path": "/tmp/vla_models/VLA_LoRA_Training_20250626_023057",
+  "config": {
+    "epochs": 5,
+    "learning_rate": 5e-05,
+    "num_samples": 200,
+    "batch_size": 4,
+    "gpu_type": "g4dn.xlarge",
+    "framework": "LoRA + LLaVA-1.6-Mistral-7B"
+  },
+  "timestamp": "2025-06-26T02:30:58.136536",
+  "resume_evidence": "MLflow experiment tracking with LoRA fine-tuning"
+}

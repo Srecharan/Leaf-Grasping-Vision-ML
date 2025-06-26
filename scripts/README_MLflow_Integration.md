@@ -12,7 +12,7 @@ This document describes the comprehensive MLflow experiment tracking integration
 - **Architecture Variations**: Lightweight, standard, deep, and wide CNN architectures
 - **Confidence Weighting**: Dynamic CV-ML balance optimization (10-30% ML weight)
 
-### 📊 **Performance Metrics Tracking**
+### Performance Metrics Tracking
 - Training and validation loss curves
 - Precision, recall, and F1 scores (targeting >94% F1, >92% precision, >97% recall)
 - Class-wise accuracy for positive/negative grasp samples
@@ -211,17 +211,17 @@ Based on the systematic experimentation, the target metrics are:
 
 This MLflow integration directly supports the following resume points:
 
-✅ **"Trained attention-based GraspPointCNN using MLflow to track 60+ model experiments"**
+**"Trained attention-based GraspPointCNN using MLflow to track 60+ model experiments"**
 - Comprehensive configuration generator creates 64 unique experiments
 - Systematic attention mechanism testing (spatial, channel, hybrid)
 - Architecture optimization across 4 variants
 
-✅ **"for grasp point optimization"**
+**"for grasp point optimization"**
 - Hybrid CV-ML approach for robust grasp selection
 - Self-supervised learning from geometric algorithms
 - Dynamic confidence weighting strategies
 
-✅ **MLflow Experiment Tracking**
+**MLflow Experiment Tracking**
 - Professional experiment management infrastructure
 - Automated metric logging and model versioning
 - Systematic hyperparameter optimization workflow

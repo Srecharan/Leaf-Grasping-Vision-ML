@@ -176,7 +176,7 @@ def demo_experiment_configs():
     # Save experiment plan
     try:
         plan_path, configs_path, summary_path = manager.save_experiment_plan()
-        print(f"\nExperiment plan saved successfully!")
+        print(f"\nExperiment plan saved!")
         print(f"  Configuration files created in ~/leaf_grasp_output/mlflow_experiments/")
     except Exception as e:
         print(f"  Note: Could not save files ({e}), but generation was successful")
@@ -208,7 +208,7 @@ def main():
     demo_mlflow_ui_instructions()
     
     print(f"\n{'=' * 60}")
-    print("Demo completed successfully!")
+    print("Demo completed!")
     print("MLflow features demonstrated:")
     print("✓ Attention-based CNN tracking")
     print("✓ Multiple model configuration support")
